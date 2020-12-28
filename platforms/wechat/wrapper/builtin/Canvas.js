@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-07-31 01:06:49
- * @LastEditTime: 2020-12-28 13:44:17
+ * @LastEditTime: 2020-12-28 21:55:01
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: \adapters\platforms\wechat\wrapper\builtin\Canvas.js
@@ -19,7 +19,8 @@ let hasInitWebGLContextConstructor = false
 let first = true
 export default function Canvas() {
   // const canvas = wx.createCanvas()
-  const canvas = first ? wx.__first__canvas ? wx.__first__canvas : wx.createCanvas() : wx.createCanvas()
+  const gt_data = wx.__gt_data || {};
+  const canvas = first ? gt_data.first_canvas ? gt_data.first_canvas : wx.createCanvas() : wx.createCanvas()
   first = false
 
   canvas.type = 'canvas'
