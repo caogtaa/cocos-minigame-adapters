@@ -1,12 +1,3 @@
-/*
- * @Author: your name
- * @Date: 2020-07-31 01:06:49
- * @LastEditTime: 2020-12-28 21:55:01
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: \adapters\platforms\wechat\wrapper\builtin\Canvas.js
- */
-
 // import HTMLCanvasElement from './HTMLCanvasElement'
 import { innerWidth, innerHeight } from './WindowProperties'
 
@@ -14,14 +5,8 @@ let hasModifiedCanvasPrototype = false
 let hasInit2DContextConstructor = false
 let hasInitWebGLContextConstructor = false
 
-// https://forum.cocos.org/t/cocos-creator-50/94999
-// 首场景引擎剥离
-let first = true
 export default function Canvas() {
-  // const canvas = wx.createCanvas()
-  const gt_data = wx.__gt_data || {};
-  const canvas = first ? gt_data.first_canvas ? gt_data.first_canvas : wx.createCanvas() : wx.createCanvas()
-  first = false
+  const canvas = wx.createCanvas()
 
   canvas.type = 'canvas'
 

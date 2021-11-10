@@ -15,15 +15,6 @@ export default class Audio extends HTMLAudioElement {
   constructor(url) {
     super()
 
-    let gt_data = wx.__gt_data;
-    if (!gt_data)
-      gt_data = wx.__gt_data = {};
-
-    if (!gt_data.innerAudioContextMap) {
-      // export this map
-      gt_data.innerAudioContextMap = _innerAudioContextMap;
-    }
-
     this._$sn = SN_SEED++;
 
     this.HAVE_NOTHING = HAVE_NOTHING
@@ -35,11 +26,6 @@ export default class Audio extends HTMLAudioElement {
     this.readyState = HAVE_NOTHING
 
     const innerAudioContext = wx.createInnerAudioContext()
-    // let originPlay = innerAudioContext.play.bind(innerAudioContext);
-    // innerAudioContext.play = () => {
-    //   console.log('--- fuck this play');
-    //   originPlay();
-    // };
 
     _innerAudioContextMap[this._$sn] = innerAudioContext
 

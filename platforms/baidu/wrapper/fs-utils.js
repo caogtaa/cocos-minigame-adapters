@@ -23,10 +23,15 @@
  THE SOFTWARE.
  ****************************************************************************/
 var fs = swan.getFileSystemManager ? swan.getFileSystemManager() : null;
+var outOfStorageRegExp = /file size over/;
 
 var fsUtils = {
 
     fs,
+
+    isOutOfStorage (errMsg) {
+        return outOfStorageRegExp.test(errMsg);
+    },
 
     getUserDataPath () {
         return swan.env.USER_DATA_PATH;
@@ -47,7 +52,7 @@ var fsUtils = {
                 onComplete && onComplete(null);
             },
             fail: function (res) {
-                console.warn('Delete file failed: ' + res.errMsg);
+                console.warn(`Delete file failed: path: ${filePath} message: ${res.errMsg}`);
                 onComplete && onComplete(new Error(res.errMsg));
             }
         });
@@ -64,12 +69,12 @@ var fsUtils = {
                     if (res.filePath) {
                         fsUtils.deleteFile(res.filePath);
                     }
-                    console.warn('Download file failed: ' + res.statusCode);
+                    console.warn(`Download file failed: path: ${remoteUrl} message: ${res.statusCode}`);
                     onComplete && onComplete(new Error(res.statusCode), null);
                 }
             },
             fail: function (res) {
-                console.warn('Download file failed: ' + res.errMsg);
+                console.warn(`Download file failed: path: ${remoteUrl} message: ${res.errMsg}`);
                 onComplete && onComplete(new Error(res.errMsg), null);
             }
         }
@@ -87,7 +92,7 @@ var fsUtils = {
                 onComplete && onComplete(null);
             },
             fail: function (res) {
-                console.warn('Save file failed: ' + res.errMsg);
+                console.warn(`Save file failed: path: ${srcPath} message: ${res.errMsg}`);
                 onComplete && onComplete(new Error(res.errMsg));
             }
         });
@@ -101,7 +106,7 @@ var fsUtils = {
                 onComplete && onComplete(null);
             },
             fail: function (res) {
-                console.warn('Copy file failed: ' + res.errMsg);
+                console.warn(`Copy file failed: path: ${srcPath} message: ${res.errMsg}`);
                 onComplete && onComplete(new Error(res.errMsg));
             }
         });
@@ -116,7 +121,7 @@ var fsUtils = {
                 onComplete && onComplete(null);
             },
             fail: function (res) {
-                console.warn('Write file failed: ' + res.errMsg);
+                console.warn(`Write file failed: path: ${path} message: ${res.errMsg}`);
                 onComplete && onComplete(new Error(res.errMsg));
             }
         });
@@ -128,7 +133,7 @@ var fsUtils = {
             return null;
         }
         catch (e) {
-            console.warn('Write file failed: ' + e.message);
+            console.warn(`Write file failed: path: ${path} message: ${e.message}`);
             return new Error(e.message);
         }
     },
@@ -141,7 +146,7 @@ var fsUtils = {
                 onComplete && onComplete(null, res.data);
             },
             fail: function (res) {
-                console.warn('Read file failed: ' + res.errMsg);
+                console.warn(`Read file failed: path: ${filePath} message: ${res.errMsg}`);
                 onComplete && onComplete (new Error(res.errMsg), null);
             }
         });
@@ -154,7 +159,7 @@ var fsUtils = {
                 onComplete && onComplete(null, res.files);
             },
             fail: function (res) {
-                console.warn('Read directory failed: ' + res.errMsg);
+                console.warn(`Read directory failed: path: ${filePath} message: ${res.errMsg}`);
                 onComplete && onComplete(new Error(res.errMsg), null);
             }
         });
@@ -176,7 +181,7 @@ var fsUtils = {
                     out = JSON.parse(text);
                 }
                 catch (e) {
-                    console.warn('Read json failed: ' + e.message);
+                    console.warn(`Read json failed: path: ${filePath} message: ${e.message}`);
                     err = new Error(e.message);
                 }
             }
@@ -190,7 +195,7 @@ var fsUtils = {
             return JSON.parse(str);
         }
         catch (e) {
-            console.warn('Read json failed: ' + e.message);
+            console.warn(`Read json failed: path: ${path} message: ${e.message}`);
             return new Error(e.message);
         }
     },
@@ -201,7 +206,7 @@ var fsUtils = {
             return null;
         }
         catch (e) {
-            console.warn('Make directory failed: ' + e.message);
+            console.warn(`Make directory failed: path: ${path} message: ${e.message}`);
             return new Error(e.message);
         }
     },
@@ -211,7 +216,7 @@ var fsUtils = {
             fs.rmdirSync(dirPath, recursive);
         }
         catch (e) {
-            console.warn('rm directory failed: ' + e.message);
+            console.warn(`rm directory failed: path: ${dirPath} message: ${e.message}`);
             return new Error(e.message);
         }
     },
@@ -235,7 +240,7 @@ var fsUtils = {
                 onComplete && onComplete();
             },
             fail: function (res) {
-                console.warn('Load Subpackage failed: ' + res.errMsg);
+                console.warn(`Load Subpackage failed: path: ${name} message: ${res.errMsg}`);
                 onComplete && onComplete(new Error(`Failed to load subpackage ${name}: ${res.errMsg}`));
             }
         });
@@ -251,6 +256,7 @@ var fsUtils = {
                 onComplete && onComplete(null);
             },
             fail (res) {
+                console.warn(`unzip failed: path: ${zipFilePath} message: ${res.errMsg}`);
                 onComplete && onComplete(new Error('unzip failed: ' + res.errMsg));
             },
         })

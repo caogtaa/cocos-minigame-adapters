@@ -1,8 +1,8 @@
 const cacheManager = require('../cache-manager');
-const { fs, downloadFile, readText, readArrayBuffer, readJson, loadSubpackage, getUserDataPath } = window.fsUtils;
+const { fs, downloadFile, readText, readArrayBuffer, readJson, loadSubpackage, getUserDataPath, exists } = window.fsUtils;
 
-const REGEX = /^\w+:\/\/.*/;
-
+const REGEX = /^https?:\/\/.*/;
+const cachedSubpackageList = {};
 const downloader = cc.assetManager.downloader;
 const parser = cc.assetManager.parser;
 const presets = cc.assetManager.presets;
@@ -55,7 +55,13 @@ function downloadDomAudio (url, options, onComplete) {
         options = null;
     }
     
-    var dom = document.createElement('audio');
+    let dom;
+    let sys = cc.sys;
+    if (sys.platform === sys.TAOBAO) {
+        dom = window.document.createElement('audio');
+    } else {
+        dom = document.createElement('audio');
+    }
     dom.src = url;
     
     // HACK: wechat does not callback when load large number of assets
@@ -125,7 +131,15 @@ var loadFont = !isSubDomain ? function (url, options, onComplete) {
     onComplete(null, 'Arial');
 }
 
-function doNothing (content, options, onComplete) { onComplete(null, content); }
+function doNothing (content, options, onComplete) {
+    exists(content, (existence) => {
+        if (existence) {
+            onComplete(null, content); 
+        } else {
+            onComplete(new Error(`file ${content} does not exist!`));
+        }
+    });
+}
 
 function downloadAsset (url, options, onComplete) {
     download(url, doNothing, options, options.onFileProgress, onComplete);
@@ -142,20 +156,27 @@ function downloadBundle (nameOrUrl, options, onComplete) {
 
     if (subpackages[bundleName]) {
         var config = `subpackages/${bundleName}/config.${version ? version + '.' : ''}json`;
+        let loadedCb = function () {
+            downloadJson(config, options, function (err, data) {
+                data && (data.base = `subpackages/${bundleName}/`);
+                onComplete(err, data);
+            });
+        };
+        if (cachedSubpackageList[bundleName]) {
+            return loadedCb();
+        }
         loadSubpackage(bundleName, options.onFileProgress, function (err) {
             if (err) {
                 onComplete(err, null);
                 return;
             }
-            downloadJson(config, options, function (err, data) {
-                data && (data.base = `subpackages/${bundleName}/`);
-                onComplete(err, data);
-            });
+            cachedSubpackageList[bundleName] = true;
+            loadedCb();
         });
     }
     else {
         let js, url;
-        if (REGEX.test(nameOrUrl)) {
+        if (REGEX.test(nameOrUrl) || (!isSubDomain && nameOrUrl.startsWith(getUserDataPath()))) {
             url = nameOrUrl;
             js = `src/scripts/${bundleName}/index.js`;
             cacheManager.makeBundleFolder(bundleName);
@@ -172,7 +193,6 @@ function downloadBundle (nameOrUrl, options, onComplete) {
             }
         }
         __cocos_require__(js);
-        options.cacheEnabled = true;
         options.__cacheBundleRoot__ = bundleName;
         var config = `${url}/config.${version ? version + '.' : ''}json`;
         downloadJson(config, options, function (err, data) {
@@ -391,6 +411,7 @@ if (!isSubDomain) {
             var item = input[i];
             var options = item.options;
             if (!item.config) {
+                if (item.ext === 'bundle') continue;
                 options.cacheEnabled = options.cacheEnabled !== undefined ? options.cacheEnabled : false;
             }
             else {

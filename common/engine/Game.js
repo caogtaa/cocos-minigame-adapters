@@ -3,7 +3,18 @@ const renderer = cc.renderer;
 const game = cc.game;
 const dynamicAtlasManager = cc.dynamicAtlasManager;
 
+let originRun = game.run;
 Object.assign(game, {
+    _banRunningMainLoop: __globalAdapter.isSubContext,
+    _firstSceneLaunched: false,
+
+    run () {
+        cc.director.once(cc.Director.EVENT_AFTER_SCENE_LAUNCH, () => {
+            this._firstSceneLaunched = true;
+        });
+        originRun.apply(this, arguments);
+    },
+    
     setFrameRate (frameRate) {
         this.config.frameRate = frameRate;
         if (__globalAdapter.setPreferredFramesPerSecond) {
@@ -21,6 +32,9 @@ Object.assign(game, {
     },
 
     _runMainLoop () {
+        if (this._banRunningMainLoop) {
+            return;
+        }
         var self = this, callback, config = self.config,
             director = cc.director,
             skip = true, frameRate = config.frameRate;
@@ -49,11 +63,19 @@ Object.assign(game, {
         if (this._rendererInitialized) return;
 
         // frame and container are useless on minigame platform
-        this.frame = this.container = document.createElement("DIV");
+        let sys = cc.sys;
+        if (sys.platform === sys.TAOBAO) {
+            this.frame = this.container = window.document.createElement("DIV");
+        } else {
+            this.frame = this.container = document.createElement("DIV");
+        }
 
         let localCanvas;
         if (__globalAdapter.isSubContext) {
             localCanvas = window.sharedCanvas || __globalAdapter.getSharedCanvas();
+        }
+        else if (sys.platform === sys.TAOBAO) {
+            localCanvas = window.canvas;
         }
         else {
             localCanvas = canvas;
@@ -106,12 +128,20 @@ Object.assign(game, {
         function onShown(res) {
             if (hidden) {
                 hidden = false;
+                if (game.renderType === game.RENDER_TYPE_WEBGL) {
+                    game._renderContext.finish();
+                }                
                 game.emit(game.EVENT_SHOW, res);
             }
         }
         
-        __globalAdapter.onAudioInterruptionEnd && __globalAdapter.onAudioInterruptionEnd(onShown);
-        __globalAdapter.onAudioInterruptionBegin && __globalAdapter.onAudioInterruptionBegin(onHidden);
+        __globalAdapter.onAudioInterruptionEnd && __globalAdapter.onAudioInterruptionEnd(function () {
+            if (cc.audioEngine) cc.audioEngine._restore();
+            
+        });
+        __globalAdapter.onAudioInterruptionBegin && __globalAdapter.onAudioInterruptionBegin(function () {
+            if (cc.audioEngine) cc.audioEngine._break();
+        });
 
         // Maybe not support in open data context
         __globalAdapter.onShow && __globalAdapter.onShow(onShown);
